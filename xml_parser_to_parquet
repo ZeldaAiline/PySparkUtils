@@ -1,0 +1,31 @@
+from datetime import datetime, timedelta
+from argparse import ArgumentParser
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import explode, col
+
+
+spark_xml_jar = "gs://path/to/spark-xml_2.12-0.12.0.jar"
+xml_file_path = "gs://path/to/file.xml"
+parquet_path = "gs://path/to/parquetfolder"
+file_name = xml_file_path.split('/')[-1]
+
+root_tag = "xn:SubNetwork"
+row_tag = "xn:MeContext"
+
+
+
+spark = (
+    SparkSession.builder
+    .appName('xml_parser_IM')
+    .config("spark.dynamicAllocation.enabled", "true")
+    .config("spark.jars", spark_xml_jar)
+    .getOrCreate()
+)
+
+df = spark.read \
+    .format("com.databricks.spark.xml") \
+    .option("rootTag", root_tag ) \
+    .option("rowTag", row_tag) \
+    .load(xml_file_path)
+    
+df.write.parquet(f"{parquet_path}")
